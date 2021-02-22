@@ -1,5 +1,5 @@
-from debug_project_app import app, Message, mail
-from flask import render_template, request, redirect, url_for
+from debug_project_app import app, Message, mail, db
+from flask import render_template, request, redirect, url_for, flash
 
 # Import for Forms
 from debug_project_app.forms import UserInfoForm, PostForm, LoginForm
@@ -8,30 +8,33 @@ from debug_project_app.forms import UserInfoForm, PostForm, LoginForm
 from debug_project_app.models import User, Post, check_password_hash
 
 # Import for Flask Login - login_required, login_user,current_user, logout_user
-from flask_login import login_required,login_user, current_user,logout_user
+from flask_login import login_required,login_user, current_user, logout_user
 
 # Home Route
 @app.route('/')
+# @app.route('/home')
 def home():
     posts = Post.query.all
-    returnrender_template("homes.html", posts = posts)
+    return render_template("home.html", posts = posts)
 
 # Register Route
 @app.route('/register', methods=['GET','POST'])
 def register():
     form = UserInfoForm()
-    if request.method = 'POST' and form.validate():
+    if request.method == 'POST' and form.validate():
         # Get Information
         username = form.username.data
         password = form.password.data
-        email = form.email
+        email = form.email.data
         print("\n",username,password,email)
         # Create an instance of User
         user = User(username,email,password)
+
         # Open and insert into database
         db.session.add(user)
         # Save info into database
         db.session.commit()
+        return render_template('login.html',form = form)
 
         # Flask Email Sender 
         
@@ -41,17 +44,18 @@ def register():
 @app.route('/posts', methods=['GET','POST'])
 @login_required
 def posts():
-    post = PostForm
+    post = PostForm()
     if request.method == 'POST' and post.validate():
         title = post.title.data
         content = post.content.data
-        user_id = current_user
-        print('\n',title,content)
+        user_id = current_user.id
+        # flash('You have successfully posted your message!' 'info')
+        print('\n',title,content, user_id)
         post = Post(title,content,user_id)
-
-        db.session.add(post,posts)
-
+    
+        db.session.add(post)
         db.session.commit()
+
         return redirect(url_for('posts'))
     return render_template('posts.html', post = post)
 
@@ -98,9 +102,15 @@ def login():
     if request.method == 'POST' and form.validate():
         email = form.email.data
         password = form.password.data
-        logged_user = User.query.filter(User.email == email).first()
-        if logged_user and check_password_hash(logged_user.password, password):
+        logged_user = User.query.filter(User.email == form.data['email']).first()
+
+        # if logged_user and check_password_hash(logged_user.password, password):
+        # if logged_user is not None and logged_user.verify_password_hash(password):
+        # FIX ME! Come back and add the password hash authentication
+        if logged_user is not None:
+
             login_user(logged_user)
+            print('second', logged_user.email)
             return redirect(url_for('home'))
         else:
             return redirect(url_for('login'))

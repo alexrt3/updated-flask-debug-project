@@ -20,16 +20,16 @@ class User(db.Model,UserMixin):
     username = db.Column(db.String(150), nullable = False, unique = True)
     email = db.Column(db.String(150), nullable = False, unique = True)
     password = db.Column(db.String(256), nullable = False)
-    post = db.relationship('Post', backref = 'author', lazy = True)
+    post = db.relationship('Post', backref = 'user', lazy = True)
 
     def __init__(self,username,email,password):
         self.username = username
         self.email = email
-        self.password = self.set_password(password)
+        self.password = password
 
-        def set_password(self,password):
-            self.pw_hash = generate_password_hash(password)
-            return self.pw_hash
+    def set_password(self,password):
+        self.pw_hash = generate_password_hash(password)
+        return self.pw_hash
 
     def __repr__(self):
         return f'{self.username} has been created with {self.email}'
